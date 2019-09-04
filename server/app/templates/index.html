@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Flasky{% endblock %}
+
+{% block page_content %}
+{{ wtf.quick_form(portrait_form) }}
+{% if got_bboxes %}
+    <img src="data:image/png;base64,{{ portrait_b64_me }}" width="{{ width }}" height="{{ height }}" />
+    <p><img src="data:image/png;base64,{{ face_b64_me }}" width="112" height="112" /></p>
+    <p>{{ face_feature }}</p>
+    <p><img src="data:image/png;base64,{{ face1_b64_spouse }}" width="112" height="112" /></p>
+    <p>{{ face1_feature }}</p>
+    <p>eye similarity: {{ '{:.2%}'.format(eye_simi) }}</p>
+    <p>nose similarity: {{ '{:.2%}'.format(nose_simi) }}</p>
+    <p>mouth similarity: {{ '{:.2%}'.format(mouth_simi) }}</p>
+    <p>face similarity: {{ '{:.2%}'.format(face_simi) }}</p>
+    <p>synthetic similarity: {{ '{:.2%}'.format(synthetic_simi) }}</p>
+{% endif %}
+{% endblock %}
