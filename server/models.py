@@ -5,8 +5,7 @@ from sklearn.preprocessing import normalize
 from skimage import transform
 from skimage.feature import local_binary_pattern
 import cv2
-import imageio
-import mxnet as mx
+from openvino.inference_engine import IECore, IENetwork
 
 
 IMAGE_SIZE = (112,112)
@@ -14,10 +13,9 @@ IMAGE_SIZE = (112,112)
 # TF_CONFIGFILE = 'models/opencv_face_detector.pbtxt'
 # TF_MODELFILE = 'models/opencv_face_detector_uint8.pb'
 # MTCNN_PATH = 'models/mtcnn-model'
-GPU = 0
 RNET_THRESHOLD = 0.0
 ONET_THRESHOLD = 0.2
-# MODEL_PATH = 'models/model-y1-test2/model,0'
+# MODEL_PATH = 'models/model-y1-test2/model-0000'
 FEATURE_DIMENSION = 128
 
 
@@ -86,48 +84,40 @@ EYE1_BY1 = np.round(EYE1_BY1).astype(np.int)
 
 models = None
 
-def cv2_read_raw(raw_data):
-    img = imageio.imread(raw_data)
-    im_io = np.asarray(img, dtype=np.uint8)
-    assert im_io is not None
-    if len(im_io.shape) == 3 and im_io.shape[2] == 3:
-        im = im_io[:,:,::-1]
-    else:
-        im = cv2.cvtColor(im_io, cv2.COLOR_GRAY2BGR)
-    return im, im_io
+ie = IECore()
+ie.set_config({'EXCLUSIVE_ASYNC_REQUESTS':'YES'}, device_name='CPU')
+ie.set_config({'CPU_THROUGHPUT_STREAMS':'CPU_THROUGHPUT_AUTO'}, device_name='CPU')
 
-def cv2_write_raw(im, bgr=True):
-    if bgr:
-        im_io = im[:,:,::-1]
-    else:
-        im_io = im
-    with io.BytesIO() as f:
-        imageio.imwrite(f, im_io, format='png')
-        raw_data = f.getvalue()
+
+def cv2_read_raw(raw_data):
+    raw = np.frombuffer(raw_data, dtype=np.uint8)
+    im = cv2.imdecode(raw, cv2.IMREAD_COLOR)
+    assert im is not None
+    return im
+
+def cv2_write_raw(im):
+    ret, enc = cv2.imencode('.png', im)
+    assert ret == True
+    raw_data = enc.tobytes()
     return raw_data
 
-def create_singleton_models(tf_configfile, tf_modelfile, mtcnn_path, model_path, gpu=GPU):
+def create_singleton_models(tf_configfile, tf_modelfile, mtcnn_path, model_path):
     global models
     if models is None:
-        print('\033[33m {}, {} \033[0m'.format(os.getpid(), os.getppid()))
         class Models(object):
             def __init__(self):
                 self.detector = Detector(tf_configfile, tf_modelfile)
-                self.aligner = Aligner(mtcnn_path, gpu)
-                self.recognizer = Recognizer(model_path, gpu)
+                self.aligner = Aligner(mtcnn_path)
+                self.recognizer = Recognizer(model_path)
 
-            def detect_faces(self, raw_data, conf_threshold=0.3):
-                im, im_io = cv2_read_raw(raw_data)
-                det_boxes = self.detector.detect_faces(im, conf_threshold)
+            def detect_faces(self, raw_data, w, h, conf_threshold=0.3):
+                im = cv2_read_raw(raw_data)
+                det_boxes = self.detector.detect_faces(im, w, h, conf_threshold)
                 bboxes = det_boxes[:,:4].astype(np.int)
-                for x0,y0,x1,y1 in bboxes:
-                    im_io = cv2.rectangle(im_io, (x0-1,y0-1), (x1+1,y1+1), (0,255,0))
-                raw_data_with_boxes = cv2_write_raw(im_io, bgr=False)
-                img_size = im.shape[1], im.shape[0]
-                return bboxes, raw_data_with_boxes, img_size
+                return bboxes
 
             def get_aligned_face(self, raw_data, box):
-                im, im_io = cv2_read_raw(raw_data)
+                im = cv2_read_raw(raw_data)
                 patch, box = cal_face_patch(im, box)
                 aligned_face, _padded_face = cal_aligned_face(self.aligner, patch, box)
                 assert aligned_face is not None
@@ -135,14 +125,14 @@ def create_singleton_models(tf_configfile, tf_modelfile, mtcnn_path, model_path,
                 return face_raw_data
 
             def cal_feature(self, face_raw_data):
-                im, im_io = cv2_read_raw(face_raw_data)
+                im = cv2_read_raw(face_raw_data)
                 aligned_face = im
                 face_feature = cal_feature(self.recognizer, aligned_face)
                 return face_feature
 
             @staticmethod
             def cal_lbp_features(face_raw_data):
-                im, im_io = cv2_read_raw(face_raw_data)
+                im = cv2_read_raw(face_raw_data)
                 aligned_face = im
 
                 mouth_box = aligned_face[MOUTH_BY0:MOUTH_BY1+1, MOUTH_BX0:MOUTH_BX1+1]
@@ -174,27 +164,9 @@ def create_singleton_models(tf_configfile, tf_modelfile, mtcnn_path, model_path,
     return models
 
 
-def adjust_input(in_data):
-    """
-        adjust the input from (h, w, c) to ( 1, c, h, w) for network input
-
-    Parameters:
-    ----------
-        in_data: numpy array of shape (h, w, c)
-            input data
-    Returns:
-    -------
-        out_data: numpy array of shape (1, c, h, w)
-            reshaped array
-    """
-    if in_data.dtype is not np.dtype('float32'):
-        out_data = in_data.astype(np.float32)
-    else:
-        out_data = in_data
-
+def adjust_input(out_data):
     out_data = out_data.transpose((2,0,1))
     out_data = np.expand_dims(out_data, 0)
-    out_data = (out_data - 127.5)*0.0078125
     return out_data
 
 def nms(boxes, overlap_threshold, mode='Union'):
@@ -369,8 +341,7 @@ class MtcnnDetector(object):
         this is a mxnet version
     """
     def __init__(self,
-                 model_folder,
-                 ctx=mx.cpu()):
+                 model_folder):
         """
             Initialize the detector
 
@@ -382,16 +353,19 @@ class MtcnnDetector(object):
                     detect threshold for 3 stages
         """
         # load 4 models from folder
-        models = ['det1', 'det2', 'det3','det4']
+        models = ['det1', 'det2-0001', 'det3-0001','det4-0001']
         models = [ os.path.join(model_folder, f) for f in models]
 
         # self.PNets = []
         # workner_net = mx.model.FeedForward.load(models[0], 1, ctx=ctx)
         # self.PNets.append(workner_net)
 
-        self.RNet = mx.model.FeedForward.load(models[1], 1, ctx=ctx)
-        self.ONet = mx.model.FeedForward.load(models[2], 1, ctx=ctx)
-        self.LNet = mx.model.FeedForward.load(models[3], 1, ctx=ctx)
+        self.RNet = IENetwork(model='{}.xml'.format(models[1]), weights='{}.bin'.format(models[1]))
+        self.eRNet = ie.load_network(network=self.RNet, device_name='CPU')
+        self.ONet = IENetwork(model='{}.xml'.format(models[2]), weights='{}.bin'.format(models[2]))
+        self.eONet = ie.load_network(network=self.ONet, device_name='CPU')
+        self.LNet = IENetwork(model='{}.xml'.format(models[3]), weights='{}.bin'.format(models[3]))
+        self.eLNet = ie.load_network(network=self.LNet, device_name='CPU')
 
     def detect_face(self, img, accurate_landmark=False,
                     rnet_threshold=0.7, onet_threshold=0.8,
@@ -426,7 +400,7 @@ class MtcnnDetector(object):
         # pad the bbox
         # [dy, edy, dx, edx, y, ey, x, ex, tmpw, tmph] = pad(total_boxes, width, height)
         # (3, 24, 24) is the input shape for RNet
-        input_buf = np.zeros((num_box, 3, 24, 24), dtype=np.float32)
+        input_buf = np.zeros((num_box, 3, 24, 24), dtype=np.uint8)
 
         for i in range(num_box):
             # tmp = np.zeros((tmph[i], tmpw[i], 3), dtype=np.uint8)            # tmp[dy[i]:edy[i]+1, dx[i]:edx[i]+1, :] = img[y[i]:ey[i]+1, x[i]:ex[i]+1, :]
@@ -436,17 +410,21 @@ class MtcnnDetector(object):
                 return None
             input_buf[i, :, :, :] = adjust_input(cv2.resize(tmp, (24, 24)))
 
-        output = self.RNet.predict(input_buf)
+        if input_buf.shape[0] != self.RNet.batch_size:
+            assert ValueError('RNet batch size:{}'.format(input_buf.shape[0]))
+            self.RNet.batch_size = input_buf.shape[0]
+            self.eRNet = ie.load_network(network=self.RNet, device_name='CPU')
+        output = self.eRNet.infer({'data':input_buf})
 
         # filter the total_boxes with threshold
-        passed = np.where(output[1][:, 1] > rnet_threshold)
+        passed = np.where(output['prob1'][:, 1] > rnet_threshold)
         total_boxes = total_boxes[passed]
 
         if total_boxes.size == 0:
             return None
 
-        total_boxes[:, 4] = output[1][passed, 1].reshape((-1,))
-        reg = output[0][passed]
+        total_boxes[:, 4] = output['prob1'][passed, 1].reshape((-1,))
+        reg = output['conv5_2'][passed]
 
         # nms
         pick = nms(total_boxes, 0.7, 'Union')
@@ -463,7 +441,7 @@ class MtcnnDetector(object):
         # pad the bbox
         # [dy, edy, dx, edx, y, ey, x, ex, tmpw, tmph] = pad(total_boxes, width, height)
         # (3, 48, 48) is the input shape for ONet
-        input_buf = np.zeros((num_box, 3, 48, 48), dtype=np.float32)
+        input_buf = np.zeros((num_box, 3, 48, 48), dtype=np.uint8)
 
         for i in range(num_box):
             # tmp = np.zeros((tmph[i], tmpw[i], 3), dtype=np.float32)
@@ -474,18 +452,22 @@ class MtcnnDetector(object):
                 return None
             input_buf[i, :, :, :] = adjust_input(cv2.resize(tmp, (48, 48)))
 
-        output = self.ONet.predict(input_buf)
+        if input_buf.shape[0] != self.ONet.batch_size:
+            self.ONet.batch_size = input_buf.shape[0]
+            print('\033[33m reload ONet batch size:{}  \033[0m'.format(self.ONet.batch_size))
+            self.eONet = ie.load_network(network=self.ONet, device_name='CPU')
+        output = self.eONet.infer({'data':input_buf})
 
         # filter the total_boxes with threshold
-        passed = np.where(output[2][:, 1] > onet_threshold)
+        passed = np.where(output['prob1'][:, 1] > onet_threshold)
         total_boxes = total_boxes[passed]
 
         if total_boxes.size == 0:
             return None
 
-        total_boxes[:, 4] = output[2][passed, 1].reshape((-1,))
-        reg = output[1][passed]
-        points = output[0][passed]
+        total_boxes[:, 4] = output['prob1'][passed, 1].reshape((-1,))
+        reg = output['conv6_2'][passed]
+        points = output['conv6_3'][passed]
 
         # compute landmark points
         bbw = total_boxes[:, 2] - total_boxes[:, 0] + 1
@@ -512,7 +494,7 @@ class MtcnnDetector(object):
         # make it even
         patchw[np.where(np.mod(patchw,2) == 1)] += 1
 
-        input_buf = np.zeros((num_box, 15, 24, 24), dtype=np.float32)
+        input_buf = np.zeros((num_box, 15, 24, 24), dtype=np.uint8)
         for i in range(5):
             x, y = points[:, i], points[:, i+5]
             x, y = np.round(x-0.5*patchw), np.round(y-0.5*patchw)
@@ -529,18 +511,23 @@ class MtcnnDetector(object):
                     return None
                 input_buf[j, i*3:i*3+3, :, :] = adjust_input(cv2.resize(tmpim, (24, 24)))
 
-        output = self.LNet.predict(input_buf)
+        if input_buf.shape[0] != self.LNet.batch_size:
+            self.LNet.batch_size = input_buf.shape[0]
+            print('\033[33m reload LNet batch size:{}  \033[0m'.format(self.LNet.batch_size))
+            self.eLNet = ie.load_network(network=self.LNet, device_name='CPU')
+        output = self.eLNet.infer({'data':input_buf})
 
         pointx = np.zeros((num_box, 5))
         pointy = np.zeros((num_box, 5))
 
         for k in range(5):
             # do not make a large movement
-            tmp_index = np.where(np.abs(output[k]-0.5) > 0.35)
-            output[k][tmp_index[0]] = 0.5
+            key = 'fc5_{}'.format(k+1)
+            tmp_index = np.where(np.abs(output[key]-0.5) > 0.35)
+            output[key][tmp_index[0]] = 0.5
 
-            pointx[:, k] = np.round(points[:, k] - 0.5*patchw) + output[k][:, 0]*patchw
-            pointy[:, k] = np.round(points[:, k+5] - 0.5*patchw) + output[k][:, 1]*patchw
+            pointx[:, k] = np.round(points[:, k] - 0.5*patchw) + output[key][:, 0]*patchw
+            pointy[:, k] = np.round(points[:, k+5] - 0.5*patchw) + output[key][:, 1]*patchw
 
         points = np.hstack([pointx, pointy])
         # points = points.astype(np.int32)
@@ -552,8 +539,7 @@ class Detector(object):
         tf_net = cv2.dnn.readNetFromTensorflow(tf_modelfile, tf_configfile)
         self.net = tf_net
 
-    def detect_faces(self, im, conf_threshold=0.2):
-        h, w, _c = im.shape
+    def detect_faces(self, im, w, h, conf_threshold=0.2):
         blob = cv2.dnn.blobFromImage(im, 1.0, (300, 300), [104, 117, 123], False, False)
         self.net.setInput(blob)
         det = self.net.forward()
@@ -575,8 +561,8 @@ class Detector(object):
         return det_boxes
 
 class Aligner(object):
-    def __init__(self, mtcnn_path, gpu):
-        self.detector = MtcnnDetector(model_folder=mtcnn_path, ctx=mx.gpu(int(gpu)))
+    def __init__(self, mtcnn_path):
+        self.detector = MtcnnDetector(model_folder=mtcnn_path)
 
     def get_box_kpoints(self, face_img,
                             rnet_threshold,
@@ -596,30 +582,16 @@ class Aligner(object):
         return bbox, points
 
 class Recognizer(object):
-    def __init__(self, model_path, gpu):
-        layer = 'fc1'
-        ctx = mx.gpu(int(gpu))
-        _vec = model_path.split(',')
-        assert len(_vec)==2
-        prefix = _vec[0]
-        epoch = int(_vec[1])
-        print('loading recog model',prefix, epoch)
-        sym, arg_params, aux_params = mx.model.load_checkpoint(prefix, epoch)
-        all_layers = sym.get_internals()
-        sym = all_layers[layer+'_output']
-        model = mx.mod.Module(symbol=sym, context=ctx, label_names=None)
-        model.bind(data_shapes=[('data', (1, 3, IMAGE_SIZE[0], IMAGE_SIZE[1]))])
-        model.set_params(arg_params, aux_params)
-        self.model = model
+    def __init__(self, model_path):
+        print('loading recog model', model_path)
+        self.net = IENetwork(model='{}.xml'.format(model_path), weights='{}.bin'.format(model_path))
+        self.enet = ie.load_network(network=self.net, device_name='CPU')
 
     def get_feature(self, aligned):
-        aligned = cv2.cvtColor(aligned, cv2.COLOR_BGR2RGB)
-        aligned = np.transpose(aligned, (2,0,1))
-        input_blob = np.expand_dims(aligned, axis=0)
-        data = mx.nd.array(input_blob)
-        db = mx.io.DataBatch(data=(data,))
-        self.model.forward(db, is_train=False)
-        embedding = self.model.get_outputs()[0].asnumpy()
+        input_blob = np.transpose(aligned, (2,0,1))
+        input_blob = np.expand_dims(input_blob, axis=0)
+        output = self.enet.infer({'data':input_blob})
+        embedding = output['pre_fc1']
         embedding = normalize(embedding).flatten()
         return embedding
 

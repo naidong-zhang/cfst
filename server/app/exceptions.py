@@ -1,0 +1,2 @@
+class FromjsonError(ValueError):
+    pass

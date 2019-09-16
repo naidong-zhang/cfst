@@ -21,7 +21,7 @@ class Config(object):
     TF_CONFIGFILE = os.path.join(basedir, 'models', 'opencv_face_detector.pbtxt')
     TF_MODELFILE = os.path.join(basedir, 'models' ,'opencv_face_detector_uint8.pb')
     MTCNN_PATH = os.path.join(basedir, 'models', 'mtcnn-model')
-    MODEL_PATH = os.path.join(basedir, 'models', 'model-y1-test2', 'model,0')
+    MODEL_PATH = os.path.join(basedir, 'models', 'model-y1-test2', 'model-0000')
 
 
     @classmethod

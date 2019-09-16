@@ -1,0 +1,108 @@
+#:kivy 1.0
+#:import os os
+
+#:set MINIMUM_HEIGHT 60
+
+<LoadDialog>:
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+
+        FileChooserIconView:
+            id: filechooser
+            rootpath: os.path.join(os.path.expanduser('~'), 'git', 'cfst')
+            filters: ['*.png','*.PNG','*.jpg','*.JPG','*.bmp','*.BMP']
+
+        BoxLayout:
+            size_hint_y: None
+            minimum_height: MINIMUM_HEIGHT
+            Button:
+                text: "Cancel"
+                on_release: root.cancel()
+
+            Button:
+                text: "Load"
+                on_release: root.load(filechooser.path, filechooser.selection, root.is_me)
+
+<SelectDialog>:
+    portrait: portrait
+
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+
+        Image:
+            id: portrait
+            nocache: True
+
+        BoxLayout:
+            size_hint_y: None
+            minimum_height: MINIMUM_HEIGHT
+            Button:
+                text: "Cancel"
+                on_release: root.cancel()
+
+            Button:
+                text: "Select"
+                on_release: root.select(root.bboxes[root.cur_bbox_id])
+
+<CFST>:
+    face_me: face_me
+    face_spouse: face_spouse
+    btn_run: btn_run
+    orientation: 'vertical'
+
+    Label:
+        text: 'COUPLE FACE SIMILARITY TEST'
+        halign: 'center'
+
+    BoxLayout:
+        orientation: 'horizontal'
+
+        BoxLayout:
+            orientation: 'vertical'
+
+            Image:
+                id: face_me
+                source: 'blank_face.png'
+
+            Button:
+                text: 'INPUT MY PHOTO'
+                on_release: root.input_my_photo()
+                size_hint_x: 0.8
+                pos_hint: {'center_x': 0.5}
+                size_hint_y: None
+                minimum_height: MINIMUM_HEIGHT
+
+        BoxLayout:
+            orientation: 'vertical'
+
+            Image:
+                id: face_spouse
+                source: 'blank_face.png'
+
+            Button:
+                text: "INPUT MY SPOUSE'S PHOTO"
+                on_release: root.input_spouse_photo()
+                size_hint_x: 0.8
+                pos_hint: {'center_x': 0.5}
+                size_hint_y: None
+                minimum_height: MINIMUM_HEIGHT
+
+    Label:
+        id: simi_result
+        text: ''
+        # halign: 'justify'
+
+    Button:
+        id: btn_run
+        disabled: True
+        text: 'ANALYZE (ONLY $1.99)'
+        on_release: root.run()
+        size_hint_x: 0.6
+        pos_hint: {'center_x': 0.5}
+        size_hint_y: None
+        minimum_height: MINIMUM_HEIGHT
+
