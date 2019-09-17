@@ -23,7 +23,7 @@
 
             Button:
                 text: "Load"
-                on_release: root.load(filechooser.path, filechooser.selection, root.is_me)
+                on_release: root.load(filechooser.path, filechooser.selection)
 
 <SelectDialog>:
     portrait: portrait
@@ -51,7 +51,9 @@
 <CFST>:
     face_me: face_me
     face_spouse: face_spouse
-    btn_run: btn_run
+    btn_simi: btn_simi
+    simi_result: simi_result
+    simi_result_title: simi_result_title
     orientation: 'vertical'
 
     Label:
@@ -91,16 +93,25 @@
                 size_hint_y: None
                 minimum_height: MINIMUM_HEIGHT
 
-    Label:
-        id: simi_result
-        text: ''
-        # halign: 'justify'
+    BoxLayout:
+        Label:
+            id: simi_result_title
+            text_size: self.size
+            text: ''
+            halign: 'right'
+            valign: 'center'
+        Label:
+            id: simi_result
+            text_size: self.size
+            text: ''
+            halign: 'left'
+            valign: 'center'
 
     Button:
-        id: btn_run
+        id: btn_simi
         disabled: True
         text: 'ANALYZE (ONLY $1.99)'
-        on_release: root.run()
+        on_release: root.simi()
         size_hint_x: 0.6
         pos_hint: {'center_x': 0.5}
         size_hint_y: None

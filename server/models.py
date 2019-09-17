@@ -88,19 +88,6 @@ ie = IECore()
 ie.set_config({'EXCLUSIVE_ASYNC_REQUESTS':'YES'}, device_name='CPU')
 ie.set_config({'CPU_THROUGHPUT_STREAMS':'CPU_THROUGHPUT_AUTO'}, device_name='CPU')
 
-
-def cv2_read_raw(raw_data):
-    raw = np.frombuffer(raw_data, dtype=np.uint8)
-    im = cv2.imdecode(raw, cv2.IMREAD_COLOR)
-    assert im is not None
-    return im
-
-def cv2_write_raw(im):
-    ret, enc = cv2.imencode('.png', im)
-    assert ret == True
-    raw_data = enc.tobytes()
-    return raw_data
-
 def create_singleton_models(tf_configfile, tf_modelfile, mtcnn_path, model_path):
     global models
     if models is None:
@@ -110,31 +97,40 @@ def create_singleton_models(tf_configfile, tf_modelfile, mtcnn_path, model_path)
                 self.aligner = Aligner(mtcnn_path)
                 self.recognizer = Recognizer(model_path)
 
-            def detect_faces(self, raw_data, w, h, conf_threshold=0.3):
-                im = cv2_read_raw(raw_data)
+            def detect_faces(self, im, w, h, conf_threshold=0.3):
                 det_boxes = self.detector.detect_faces(im, w, h, conf_threshold)
                 bboxes = det_boxes[:,:4].astype(np.int)
                 return bboxes
 
-            def get_aligned_face(self, raw_data, box):
-                im = cv2_read_raw(raw_data)
-                patch, box = cal_face_patch(im, box)
+            def align_face(self, patch, box):
+                # already patched on client side
+                # patch, box = cal_face_patch(im, box)
                 aligned_face, _padded_face = cal_aligned_face(self.aligner, patch, box)
-                assert aligned_face is not None
-                face_raw_data = cv2_write_raw(aligned_face)
-                return face_raw_data
+                return aligned_face
 
-            def cal_feature(self, face_raw_data):
-                im = cv2_read_raw(face_raw_data)
-                aligned_face = im
-                face_feature = cal_feature(self.recognizer, aligned_face)
-                return face_feature
+            def cal_face_simi(self, face0_im, face1_im):
+                face0_feature = cal_feature(self.recognizer, face0_im)
+                face1_feature = cal_feature(self.recognizer, face1_im)
+                face_simi = self._cal_face_similarity(face0_feature, face1_feature)
+                return face_simi
+
+            def cal_lbp_simi(self, face0_im, face1_im):
+                'only for aligned face'
+                mouth0_lbp, nose0_lbp, eye00_lbp, eye01_lbp = self._cal_lbp_features(face0_im)
+                mouth1_lbp, nose1_lbp, eye10_lbp, eye11_lbp = self._cal_lbp_features(face1_im)
+
+                mouth_simi = self._cal_lbp_similarity(mouth0_lbp, mouth1_lbp)
+                nose_simi = self._cal_lbp_similarity(nose0_lbp, nose1_lbp)
+                eye00_simi = self._cal_lbp_similarity(eye00_lbp, eye10_lbp)
+                eye11_simi = self._cal_lbp_similarity(eye01_lbp, eye11_lbp)
+                eye01_simi = self._cal_lbp_similarity(eye00_lbp, eye11_lbp)
+                eye10_simi = self._cal_lbp_similarity(eye01_lbp, eye10_lbp)
+                eye_simi = max(eye00_simi, eye11_simi, eye01_simi, eye10_simi)
+
+                return mouth_simi, nose_simi, eye_simi
 
             @staticmethod
-            def cal_lbp_features(face_raw_data):
-                im = cv2_read_raw(face_raw_data)
-                aligned_face = im
-
+            def _cal_lbp_features(aligned_face):
                 mouth_box = aligned_face[MOUTH_BY0:MOUTH_BY1+1, MOUTH_BX0:MOUTH_BX1+1]
                 eye0_box = aligned_face[EYE0_BY0:EYE0_BY1+1, EYE0_BX0:EYE0_BX1+1]
                 eye1_box = aligned_face[EYE1_BY0:EYE1_BY1+1, EYE1_BX0:EYE1_BX1+1]
@@ -148,13 +144,13 @@ def create_singleton_models(tf_configfile, tf_modelfile, mtcnn_path, model_path)
                 return mouth_feature, nose_feature, eye0_feature, eye1_feature
 
             @staticmethod
-            def cal_face_similarity(face0, face1):
-                face_similarity = np.dot(face0, face1) * 0.5 + 0.5
+            def _cal_face_similarity(face0_feature, face1_feature):
+                face_similarity = np.dot(face0_feature, face1_feature) * 0.5 + 0.5
                 face_similarity = postprocess(face_similarity)
                 return face_similarity
 
             @staticmethod
-            def cal_lbp_similarity(lbp0, lbp1):
+            def _cal_lbp_similarity(lbp0, lbp1):
                 lbp_similarity = cal_lbp_simi(lbp0, lbp1)
                 lbp_similarity = postprocess(lbp_similarity)
                 return lbp_similarity
@@ -730,7 +726,7 @@ def cal_lbp_simi(hist0, hist1):
     return simi
 
 def postprocess(simi):
-    # simi = simi ** 0.9
+    simi = simi ** 0.8
     return simi
 
 

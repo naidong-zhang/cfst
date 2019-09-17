@@ -1,8 +1,23 @@
 import base64
+import numpy as np
+import cv2
 
 from flask import jsonify, request, url_for, current_app
 from . import api
 from .errors import bad_request
+
+def _cv2_read_raw(raw_data):
+    enc = np.frombuffer(raw_data, dtype=np.uint8)
+    im = cv2.imdecode(enc, cv2.IMREAD_COLOR)
+    assert im is not None
+    return im
+
+def _cv2_write_raw(im, format='.png'):
+    ret, enc = cv2.imencode(format, im)
+    assert ret == True
+    enc = np.squeeze(enc)
+    raw_data = enc.tobytes()
+    return raw_data
 
 @api.route('/detect/', methods=['POST'])
 def detect_faces():
@@ -14,25 +29,58 @@ def detect_faces():
     h = request.json.get('h')
     w, h = int(w), int(h)
 
-    bboxes = current_app.models.detect_faces(portrait_raw, w=w, h=h)
+    portrait_im = _cv2_read_raw(portrait_raw)
+    bboxes = current_app.models.detect_faces(portrait_im, w=w, h=h)
     bboxes = bboxes.tolist()
 
     return jsonify({'bboxes': bboxes})
 
 @api.route('/align/', methods=['POST'])
 def get_aligned_face():
-    b64_portrait_raw = request.json.get('portrait')
-    if b64_portrait_raw is None or len(b64_portrait_raw) == 0:
-        return bad_request('no portrait data')
+    b64_patch_raw = request.json.get('patch')
+    if b64_patch_raw is None or len(b64_patch_raw) == 0:
+        return bad_request('no patch data')
     bbox = request.json.get('bbox')
     if bbox is None or len(bbox) != 4:
         return bad_request('bad bbox')
-    portrait_raw = base64.b64decode(b64_portrait_raw)
+    patch_raw = base64.b64decode(b64_patch_raw)
 
-    face_raw = current_app.models.get_aligned_face(portrait_raw, bbox)
+    patch_im = _cv2_read_raw(patch_raw)
+    aligned_face = current_app.models.align_face(patch_im, bbox)
+    if aligned_face is None:
+        return jsonify({'aligned': False})
+
+    face_raw = _cv2_write_raw(aligned_face)
     b64_face_raw = base64.b64encode(face_raw).decode()
 
     return jsonify({'face': b64_face_raw})
+
+@api.route('/similarity/', methods=['POST'])
+def cal_simi():
+    b64_face_me = request.json.get('face_me')
+    if b64_face_me is None or len(b64_face_me) == 0:
+        return bad_request('no my face')
+    b64_face_spouse = request.json.get('face_spouse')
+    if b64_face_spouse is None or len(b64_face_spouse) == 0:
+        return bad_request("no my spouse's face")
+    aligned = request.json.get('aligned')
+
+    face_me_raw = base64.b64decode(b64_face_me)
+    face_spouse_raw = base64.b64decode(b64_face_spouse)
+
+    face_me_im = _cv2_read_raw(face_me_raw)
+    face_spouse_im = _cv2_read_raw(face_spouse_raw)
+
+    face_simi = current_app.models.cal_face_simi(face_me_im, face_spouse_im)
+    if aligned:
+        mouth_simi, nose_simi, eye_simi = current_app.models.cal_lbp_simi(face_me_im, face_spouse_im)
+        synthetic_simi = (eye_simi + nose_simi + mouth_simi + face_simi) / 4
+        return jsonify({'face_simi': face_simi, 'mouth_simi': mouth_simi, 'nose_simi': nose_simi, 'eye_simi': eye_simi, 'syn_simi': synthetic_simi})
+    return jsonify({'face_simi': face_simi})
+
+
+
+
 
 
 

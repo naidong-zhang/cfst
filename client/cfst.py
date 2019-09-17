@@ -26,7 +26,6 @@ SERVER_URL = 'http://127.0.0.1:5000/api/v0'
 class LoadDialog(FloatLayout):
     load = ObjectProperty(None)
     cancel = ObjectProperty(None)
-    is_me = BooleanProperty()
 
 class SelectDialog(FloatLayout):
     portrait = ObjectProperty(None)
@@ -114,10 +113,13 @@ class SelectDialog(FloatLayout):
 
 
 
+
 class CFST(BoxLayout):
     face_me = ObjectProperty(None)
     face_spouse = ObjectProperty(None)
     btn_run = ObjectProperty(None)
+    simi_result = ObjectProperty(None)
+    simi_result_title = ObjectProperty(None)
 
     HEADERS = {'Content-type': 'application/json'}
 
@@ -126,8 +128,13 @@ class CFST(BoxLayout):
 
         self.popup = None
         self.portrait_rgb = None
+
+        self.is_me = True
         self.got_me = False
         self.got_spouse = False
+
+        self.b64_face_me = ''
+        self.b64_face_spouse = ''
 
     def input_my_photo(self):
         self._input_photo(is_me=True)
@@ -136,14 +143,16 @@ class CFST(BoxLayout):
         self._input_photo(is_me=False)
 
     def _input_photo(self, is_me):
-        content = LoadDialog(load=self._detect, cancel=self._dismiss_popup, is_me=is_me)
-        self.popup = Popup(title='INPUT MY PHOTO', content=content, size_hint=(0.9, 0.9))
+        self.is_me = is_me
+        content = LoadDialog(load=self._detect, cancel=self._dismiss_popup)
+        title = 'INPUT MY PHOTO' if is_me else "INPUT MY SPOUSE'S PHOTO"
+        self.popup = Popup(title=title, content=content, size_hint=(0.9, 0.9))
         self.popup.open()
 
     def _dismiss_popup(self):
         self.popup.dismiss()
 
-    def _detect(self, path, filenames, is_me):
+    def _detect(self, path, filenames):
         # load portrait
         fp = os.path.join(path, filenames[0])
         with open(fp, 'rb') as f:
@@ -163,6 +172,7 @@ class CFST(BoxLayout):
         data1 = raw.tobytes()
         if len(data) < len(data1):
             data1 = data
+
         self._dismiss_popup()
 
         # send portrait
@@ -176,33 +186,58 @@ class CFST(BoxLayout):
         assert bboxes is not None
 
         content = SelectDialog(portrait_rgb=self.portrait_rgb, bboxes=bboxes, select=self._align, cancel=self._dismiss_popup)
-        self.popup = Popup(title='SELECT ONE FACE', content=content, size_hint=(0.9, 0.9))
+        title = 'SELECT MY FACE' if self.is_me else "SELECT MY SPOUSE'S FACE"
+        self.popup = Popup(title=title, content=content, size_hint=(0.9, 0.9))
         self.popup.open()
 
+    @staticmethod
+    def _cal_face_patch(image, box):
+        # convert_to_square
+        x0,y0,x1,y1 = box
+        h = y1 - y0 + 1
+        w = x1 - x0 + 1
+        max_side = max(h, w)
+        # pad
+        max_side += max_side // 2
+
+        px0 = x0 + w // 2 - max_side // 2
+        py0 = y0 + h // 2 - max_side // 2
+        px1 = px0 + max_side - 1
+        py1 = py0 + max_side - 1
+        px0 = max(px0, 0)
+        py0 = max(py0, 0)
+        patch = image[py0:py1+1,px0:px1+1]
+
+        bx0 = x0 - px0
+        by0 = y0 - py0
+        bx1 = x1 - px0
+        by1 = y1 - py0
+        box2 = bx0,by0,bx1,by1
+        return patch, box2
+
     def _align(self, bbox):
-        print(bbox)
+        patch_rgb, box = self._cal_face_patch(self.portrait_rgb, bbox)
+        patch = cv2.cvtColor(patch_rgb, cv2.COLOR_RGB2BGR)
+        ret, raw = cv2.imencode('.png', patch)
+        assert ret == True
+        raw = np.squeeze(raw)
+        data = raw.tobytes()
+
         self._dismiss_popup()
 
+        # send patch
+        b64_patch_raw = base64.b64encode(data).decode()
+        body = json.dumps({'patch': b64_patch_raw, 'bbox': box})
+        _req = UrlRequest(SERVER_URL + '/align/', req_headers=self.HEADERS, req_body=body,
+                            on_success=self.req_align)
 
+    def req_align(self, req, result):
+        b64_face_raw = result.get('face')
+        if b64_face_raw is None and result.get('aligned') == False:
+            popup = Popup(title='error', content=Label(text='face direction is bad!'), size_hint=(0.9, 0.4))
+            popup.open()
+            return
 
-
-
-    def debug(self):
-        # r = requests.post(SERVER_URL + '/detect/', json={'portrait': b64_portrait_raw})
-        # receive bboxes
-        # assert r.status_code == 200
-        # bboxes = r.json().get('bboxes')
-        # assert len(bboxes) == 1
-        # if len(bboxes) == 1:
-        #     bbox = bboxes[0]
-        # draw bboxes
-        # select bbox
-        # send bbox
-        r = requests.post(SERVER_URL + '/align/', json={'portrait': b64_portrait_raw,
-                                                        'bbox': bbox})
-        # receive face
-        assert r.status_code == 200
-        b64_face_raw = r.json().get('face')
         # show face
         face_raw = base64.b64decode(b64_face_raw)
         raw = np.frombuffer(face_raw, dtype=np.uint8)
@@ -214,25 +249,57 @@ class CFST(BoxLayout):
         texture.blit_buffer(im_rgb.ravel(), colorfmt='rgb', bufferfmt='ubyte', mipmap_generation=False)
         texture.flip_vertical()
 
-        # show face
-        if is_me:
+        if self.is_me:
             self.face_me.texture = texture
             self.got_me = True
+            self.b64_face_me = b64_face_raw
         else:
             self.face_spouse.texture = texture
             self.got_spouse = True
-        self._refresh_btn_run()
+            self.b64_face_spouse = b64_face_raw
+        self._refresh_btn_simi()
 
-
-    def _refresh_btn_run(self):
+    def _refresh_btn_simi(self):
         if self.got_me and self.got_spouse:
-            self.btn_run.disabled = False
+            self.btn_simi.disabled = False
         else:
-            self.btn_run.disabled = True
+            self.btn_simi.disabled = True
+        self.simi_result.text = ''
+        self.simi_result_title.text = ''
+
+    def simi(self):
+        self.btn_simi.text = 'ANALYZING...'
+        # send face pair
+        body = json.dumps({'face_me': self.b64_face_me, 'face_spouse': self.b64_face_spouse, 'aligned': True})
+        _req = UrlRequest(SERVER_URL + '/similarity/', req_headers=self.HEADERS, req_body=body,
+                            on_success=self.req_simi)
+
+    def req_simi(self, req, result):
+        face_simi = result.get('face_simi')
+        eye_simi = result.get('eye_simi')
+        assert eye_simi is not None
+        nose_simi = result.get('nose_simi')
+        mouth_simi = result.get('mouth_simi')
+        syn_simi = result.get('syn_simi')
+
+        self.simi_result_title.text = \
+'''EYES SIMILARITY: 
+NOSE SIMILARITY: 
+MOUTH SIMILARITY: 
+FACE SIMILARITY: 
+SYNTHETIC SIMILARITY: 
+'''
+        self.simi_result.text = \
+''' {eye:.2%}
+ {nose:.2%}
+ {mouth:.2%}
+ {face:.2%}
+ {syn:.3%}
+ '''.format(face=face_simi, eye=eye_simi, nose=nose_simi, mouth=mouth_simi, syn=syn_simi)
+        self.btn_simi.text = 'ANALYZE (ONLY $1.59)'
 
 
-    def run(self):
-        pass
+
 
 class CFSTApp(App):
     def build(self):
