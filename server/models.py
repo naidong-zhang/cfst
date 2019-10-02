@@ -649,20 +649,23 @@ def cal_face_patch(image, box):
     # pad
     max_side += max_side // 2
 
+    square = np.zeros((max_side, max_side, image.shape[2]), dtype=np.uint8)
+
     px0 = x0 + w // 2 - max_side // 2
     py0 = y0 + h // 2 - max_side // 2
     px1 = px0 + max_side - 1
     py1 = py0 + max_side - 1
-    px0 = max(px0, 0)
-    py0 = max(py0, 0)
-    patch = image[py0:py1+1,px0:px1+1]
+
+    src = image[max(py0,0):py1+1, max(px0,0):px1+1]
+    h, w = src.shape[:2]
+    square[max(-py0,0):max(-py0,0)+h, max(-px0,0):max(-px0,0)+w] = src
 
     bx0 = x0 - px0
     by0 = y0 - py0
     bx1 = x1 - px0
     by1 = y1 - py0
     box2 = bx0,by0,bx1,by1
-    return patch, box2
+    return square, box2
 
 def cal_aligned_face(aligner, patch, box, padded_too=False):
     aligned_face, padded_face = None, None
@@ -726,7 +729,7 @@ def cal_lbp_simi(hist0, hist1):
     return simi
 
 def postprocess(simi):
-    simi = simi ** 0.8
+    simi = simi ** 0.7
     return simi
 
 

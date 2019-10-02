@@ -8,7 +8,7 @@ import numpy as np
 import cv2
 
 import kivy
-kivy.require('1.10.1')
+kivy.require('1.11.1')
 from kivy.app import App
 # from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
@@ -20,7 +20,7 @@ from kivy.graphics.texture import Texture
 from kivy.network.urlrequest import UrlRequest
 
 
-SERVER_URL = 'http://127.0.0.1:5000/api/v0'
+SERVER_URL = 'http://192.168.1.101:5000/api/v0'
 
 
 class LoadDialog(FloatLayout):
@@ -74,9 +74,6 @@ class SelectDialog(FloatLayout):
             return True
 
     def reload_portrait(self):
-        h,w,_c = self.portrait_rgb.shape
-        texture = Texture.create(size=(w,h))
-
         im = self.portrait_rgb.copy()
         im = self._bright(im, -50)
         for i, bbox in enumerate(self.bboxes):
@@ -93,6 +90,9 @@ class SelectDialog(FloatLayout):
 
         # for debug
         # im = cv2.circle(im, self.touch_pos_in_cv2, 5, (255,0,0), -1)
+
+        h,w,_c = self.portrait_rgb.shape
+        texture = Texture.create(size=(w,h), colorfmt='rgb')
         texture.blit_buffer(im.ravel(), colorfmt='rgb', bufferfmt='ubyte', mipmap_generation=False)
         texture.flip_vertical()
         self.portrait.texture = texture
@@ -184,6 +184,12 @@ class CFST(BoxLayout):
     def req_detect(self, req, result):
         bboxes = result.get('bboxes')
         assert bboxes is not None
+        if len(bboxes) == 0:
+            popup = Popup(title='error', content=Label(text='no face detected!'), size_hint=(0.9, 0.4))
+            popup.open()
+            return
+        elif len(bboxes) == 1:
+            return self._align(bboxes[0])
 
         content = SelectDialog(portrait_rgb=self.portrait_rgb, bboxes=bboxes, select=self._align, cancel=self._dismiss_popup)
         title = 'SELECT MY FACE' if self.is_me else "SELECT MY SPOUSE'S FACE"
@@ -200,20 +206,23 @@ class CFST(BoxLayout):
         # pad
         max_side += max_side // 2
 
+        square = np.zeros((max_side, max_side, image.shape[2]), dtype=np.uint8)
+
         px0 = x0 + w // 2 - max_side // 2
         py0 = y0 + h // 2 - max_side // 2
         px1 = px0 + max_side - 1
         py1 = py0 + max_side - 1
-        px0 = max(px0, 0)
-        py0 = max(py0, 0)
-        patch = image[py0:py1+1,px0:px1+1]
+
+        src = image[max(py0,0):py1+1, max(px0,0):px1+1]
+        h, w = src.shape[:2]
+        square[max(-py0,0):max(-py0,0)+h, max(-px0,0):max(-px0,0)+w] = src
 
         bx0 = x0 - px0
         by0 = y0 - py0
         bx1 = x1 - px0
         by1 = y1 - py0
         box2 = bx0,by0,bx1,by1
-        return patch, box2
+        return square, box2
 
     def _align(self, bbox):
         patch_rgb, box = self._cal_face_patch(self.portrait_rgb, bbox)
@@ -245,7 +254,7 @@ class CFST(BoxLayout):
         assert im is not None
         im_rgb = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
         w,h = 112,112
-        texture = Texture.create(size=(w,h))
+        texture = Texture.create(size=(w,h), colorfmt='rgb')
         texture.blit_buffer(im_rgb.ravel(), colorfmt='rgb', bufferfmt='ubyte', mipmap_generation=False)
         texture.flip_vertical()
 

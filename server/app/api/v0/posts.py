@@ -2,7 +2,7 @@ import base64
 import numpy as np
 import cv2
 
-from flask import jsonify, request, url_for, current_app
+from flask import jsonify, request, url_for, redirect, current_app
 from . import api
 from .errors import bad_request
 
@@ -18,6 +18,10 @@ def _cv2_write_raw(im, format='.png'):
     enc = np.squeeze(enc)
     raw_data = enc.tobytes()
     return raw_data
+
+def _preprocess(im):
+    im1 = cv2.bilateralFilter(im, 15, 20, 5)
+    return im1
 
 @api.route('/detect/', methods=['POST'])
 def detect_faces():
@@ -70,6 +74,9 @@ def cal_simi():
 
     face_me_im = _cv2_read_raw(face_me_raw)
     face_spouse_im = _cv2_read_raw(face_spouse_raw)
+
+    face_me_im = _preprocess(face_me_im)
+    face_spouse_im = _preprocess(face_spouse_im)
 
     face_simi = current_app.models.cal_face_simi(face_me_im, face_spouse_im)
     if aligned:
