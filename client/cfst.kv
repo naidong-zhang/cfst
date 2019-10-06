@@ -1,7 +1,9 @@
 #:kivy 1.0
 #:import os os
+#:import platform kivy.utils.platform
 
 #:set MINIMUM_HEIGHT 60
+#:set SMALL_FONT_SIZE 30 if platform == 'android' else 14
 
 <LoadDialog>:
     BoxLayout:
@@ -11,7 +13,7 @@
 
         FileChooserIconView:
             id: filechooser
-            rootpath: os.path.abspath('/sdcard') if os.path.exists('/sdcard') else os.path.expanduser('~')
+            rootpath: os.path.abspath('/sdcard') if platform == 'android' and os.path.exists('/sdcard') else os.path.expanduser('~/git/cfst')
             filters: ['*.png','*.PNG','*.jpg','*.JPG','*.bmp','*.BMP','*.jpeg','*.JPEG']
 
         BoxLayout:
@@ -48,13 +50,27 @@
                 text: "Select"
                 on_release: root.select(root.bboxes[root.cur_bbox_id])
 
+<AnimLabel@Label>
+    text_size: self.size
+    text: ''
+    font_size: SMALL_FONT_SIZE
+    valign: 'center'
+
 <CFST>:
+    orientation: 'vertical'
     face_me: face_me
     face_spouse: face_spouse
     btn_simi: btn_simi
-    simi_result: simi_result
-    simi_result_title: simi_result_title
-    orientation: 'vertical'
+    eye_simi_result_title: eye_simi_result_title
+    eye_simi_result: eye_simi_result
+    nose_simi_result_title: nose_simi_result_title
+    nose_simi_result: nose_simi_result
+    mouth_simi_result_title: mouth_simi_result_title
+    mouth_simi_result: mouth_simi_result
+    face_simi_result_title: face_simi_result_title
+    face_simi_result: face_simi_result
+    syn_simi_result_title: syn_simi_result_title
+    syn_simi_result: syn_simi_result
 
     Label:
         text: 'COUPLE FACE SIMILARITY TEST'
@@ -66,13 +82,14 @@
         BoxLayout:
             orientation: 'vertical'
 
-            Image:
+            AnimImage:
                 id: face_me
                 source: 'blank_face.png'
 
             Button:
                 text: 'INPUT MY PHOTO'
-                font_size: 12
+                halign: 'center'
+                font_size: SMALL_FONT_SIZE
                 on_release: root.input_my_photo()
                 size_hint_x: 0.8
                 pos_hint: {'center_x': 0.5}
@@ -82,13 +99,14 @@
         BoxLayout:
             orientation: 'vertical'
 
-            Image:
+            AnimImage:
                 id: face_spouse
                 source: 'blank_face.png'
 
             Button:
-                text: "INPUT MY SPOUSE'S PHOTO"
-                font_size: 12
+                text: "INPUT MY\nSPOUSE'S PHOTO"
+                halign: 'center'
+                font_size: SMALL_FONT_SIZE
                 on_release: root.input_spouse_photo()
                 size_hint_x: 0.8
                 pos_hint: {'center_x': 0.5}
@@ -96,18 +114,47 @@
                 minimum_height: MINIMUM_HEIGHT
 
     BoxLayout:
-        Label:
-            id: simi_result_title
-            text_size: self.size
-            text: ''
-            halign: 'right'
-            valign: 'center'
-        Label:
-            id: simi_result
-            text_size: self.size
-            text: ''
-            halign: 'left'
-            valign: 'center'
+        orientation: 'vertical'
+        BoxLayout:
+            AnimLabel:
+                id: eye_simi_result_title
+                halign: 'right'
+            AnimLabel:
+                id: eye_simi_result
+                halign: 'left'
+                size_hint_x: 0.6
+        BoxLayout:
+            AnimLabel:
+                id: nose_simi_result_title
+                halign: 'right'
+            AnimLabel:
+                id: nose_simi_result
+                halign: 'left'
+                size_hint_x: 0.6
+        BoxLayout:
+            AnimLabel:
+                id: mouth_simi_result_title
+                halign: 'right'
+            AnimLabel:
+                id: mouth_simi_result
+                halign: 'left'
+                size_hint_x: 0.6
+        BoxLayout:
+            AnimLabel:
+                id: face_simi_result_title
+                halign: 'right'
+            AnimLabel:
+                id: face_simi_result
+                halign: 'left'
+                size_hint_x: 0.6
+        BoxLayout:
+            AnimLabel:
+                id: syn_simi_result_title
+                halign: 'right'
+            AnimLabel:
+                id: syn_simi_result
+                halign: 'left'
+                size_hint_x: 0.6
 
     Button:
         id: btn_simi

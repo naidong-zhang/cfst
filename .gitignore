@@ -1,8 +1,10 @@
 # mypy
 .vscode/
-models/
+models
 *.png
 server/run-flask.sh
+.buildozer/
+bin/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

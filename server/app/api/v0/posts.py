@@ -81,7 +81,7 @@ def cal_simi():
     face_simi = current_app.models.cal_face_simi(face_me_im, face_spouse_im)
     if aligned:
         mouth_simi, nose_simi, eye_simi = current_app.models.cal_lbp_simi(face_me_im, face_spouse_im)
-        synthetic_simi = (eye_simi + nose_simi + mouth_simi + face_simi) / 4
+        synthetic_simi = (eye_simi + nose_simi + mouth_simi) * 0.2 + face_simi * 0.4
         return jsonify({'face_simi': face_simi, 'mouth_simi': mouth_simi, 'nose_simi': nose_simi, 'eye_simi': eye_simi, 'syn_simi': synthetic_simi})
     return jsonify({'face_simi': face_simi})
 
