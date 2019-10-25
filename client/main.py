@@ -9,23 +9,32 @@ import cv2
 
 import kivy
 kivy.require('1.11.1')
+from kivy.config import Config
+fonts = ['data/fonts/RobotoMono-Regular.ttf', 'NotoSansCJK-Thin.ttc']
+Config.set('kivy', 'default_font', str(fonts))
+# from kivy.config import Config
+# fonts = ['data/fonts/Roboto-Regular.ttf', 'NotoSansCJK-Regular.ttc']
+# Config.set('kivy', 'default_font', fonts)
+
 from kivy.app import App
 # from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
-from kivy.properties import ObjectProperty, BooleanProperty
+from kivy.properties import ObjectProperty, BooleanProperty, StringProperty
 from kivy.uix.image import Image
 from kivy.graphics.texture import Texture
 from kivy.network.urlrequest import UrlRequest
-# from kivy.clock import Clock
 from kivy.animation import Animation
 
 from utils import cal_pts, EYE_PT0, EYE_PT1, NOSE_PT0, NOSE_PT1, MOUTH_PT0, MOUTH_PT1
+from filechooserthumbview import get_thumbimage
+# from plyer import filechooser
 
 
 SERVER_URL = 'http://192.168.1.101:5000/api/v0'
+MAX_SMALL_SIZE = 1024
 
 
 def _bright(im_rgb, v):
@@ -45,6 +54,7 @@ def _bright(im_rgb, v):
 class LoadDialog(FloatLayout):
     load = ObjectProperty(None)
     cancel = ObjectProperty(None)
+    enter_path = StringProperty()
 
 
 class SelectDialog(FloatLayout):
@@ -278,6 +288,8 @@ class CFST(BoxLayout):
 
         self.anims = list()
 
+        self.path = ''
+
     def input_my_photo(self):
         self._input_photo(is_me=True)
 
@@ -286,7 +298,7 @@ class CFST(BoxLayout):
 
     def _input_photo(self, is_me):
         self.is_me = is_me
-        content = LoadDialog(load=self._detect, cancel=self._dismiss_popup)
+        content = LoadDialog(load=self._detect, cancel=self._dismiss_popup, enter_path=self.path)
         title = 'INPUT MY PHOTO' if is_me else "INPUT MY SPOUSE'S PHOTO"
         self.popup = Popup(title=title, content=content, size_hint=(0.9, 0.9))
         self.popup.open()
@@ -295,6 +307,7 @@ class CFST(BoxLayout):
         self.popup.dismiss()
 
     def _detect(self, path, filenames):
+        self.path = path
         # load portrait
         fp = os.path.join(path, filenames[0])
         with open(fp, 'rb') as f:
@@ -302,6 +315,7 @@ class CFST(BoxLayout):
             raw = np.frombuffer(data, dtype=np.uint8)
             im = cv2.imdecode(raw, cv2.IMREAD_COLOR)
             assert im is not None
+            im = get_thumbimage(im, thumb_size=MAX_SMALL_SIZE)
 
         self.portrait_rgb = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 

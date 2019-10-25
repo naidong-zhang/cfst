@@ -1,6 +1,7 @@
 #:kivy 1.0
 #:import os os
 #:import platform kivy.utils.platform
+#:import FileChooserThumbView filechooserthumbview.FileChooserThumbView
 
 #:set MINIMUM_HEIGHT 60
 #:set SMALL_FONT_SIZE 30 if platform == 'android' else 14
@@ -11,10 +12,11 @@
         pos: root.pos
         orientation: "vertical"
 
-        FileChooserIconView:
+        FileChooserThumbView:
             id: filechooser
-            rootpath: os.path.abspath('/sdcard') if platform == 'android' and os.path.exists('/sdcard') else os.path.expanduser('~/git/cfst')
+            rootpath: os.path.abspath('/sdcard') if platform == 'android' and os.path.exists('/sdcard') else os.path.expanduser('~')
             filters: ['*.png','*.PNG','*.jpg','*.JPG','*.bmp','*.BMP','*.jpeg','*.JPEG']
+            path: root.enter_path if root.enter_path else self.rootpath
 
         BoxLayout:
             size_hint_y: None
