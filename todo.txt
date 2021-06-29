@@ -1,0 +1,7 @@
+add https
+on server side, add alipay or others
+on client side(app), add alipay or others
+app littleprogram of wechat and wx pay
+add function: foreign stars photos
+add function: before server return detect bboxes, drop all faces which cannot align
+(maybe hard) fix jpg, png of same face bug (before cal lbp and face-feature, add biliteralfilter to input face image: no effect!)

@@ -23,6 +23,12 @@ def _preprocess(im):
     im1 = cv2.bilateralFilter(im, 15, 20, 5)
     return im1
 
+@api.route('/login/', methods=['POST'])
+def login():
+    code = request.json.get('code')
+    print(code)
+    return jsonify({'res': code})
+
 @api.route('/detect/', methods=['POST'])
 def detect_faces():
     b64_portrait_raw = request.json.get('portrait')
