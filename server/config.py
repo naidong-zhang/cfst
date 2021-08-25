@@ -1,5 +1,5 @@
 import os
-from models import create_singleton_models
+# from models import create_singleton_models
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -16,6 +16,8 @@ class Config(object):
     FLASKY_MAIL_SENDER = 'Flasky Admin <flasky@example.com>'
     FLASKY_ADMIN = os.environ.get('FLASKY_ADMIN')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    #uploaded file size
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024;
 
     # models
     TF_CONFIGFILE = os.path.join(basedir, 'models', 'opencv_face_detector.pbtxt')
@@ -27,10 +29,11 @@ class Config(object):
     @classmethod
     def init_app(cls, app):
         assert not hasattr(app, 'models')
-        app.models = create_singleton_models(tf_configfile=cls.TF_CONFIGFILE,
-                                            tf_modelfile=cls.TF_MODELFILE,
-                                            mtcnn_path=cls.MTCNN_PATH,
-                                            model_path=cls.MODEL_PATH)
+        app.models = 'debug'
+        # app.models = create_singleton_models(tf_configfile=cls.TF_CONFIGFILE,
+        #                                     tf_modelfile=cls.TF_MODELFILE,
+        #                                     mtcnn_path=cls.MTCNN_PATH,
+        #                                     model_path=cls.MODEL_PATH)
 
 
 class DevelopmentConfig(Config):

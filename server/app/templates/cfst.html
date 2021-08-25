@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Similarity Test of Couple's Faces{% endblock %}
+
+{% block head %}
+{{super()}}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/cfst.css') }}">
+    <script>const DEFAULT_PHOTO = "{{ url_for('static', filename='img/anonym.jpg') }}";</script>
+    <script>const DETECT_URL = "{{ url_for('.detect_faces') }}";</script>
+    <script>const ALIGN_URL = "{{ url_for('.align_face') }}";</script>
+    <script>const SIMI_URL = "{{ url_for('.cal_simi') }}";</script>
+    <script src="{{ url_for('static', filename='js/cfst.js') }}"></script>
+    {% endblock %}
+
+{% block page_content %}
+<section class="cfst-container">
+
+    <div class="page-title">
+        <h1>Similarity Test of Couple's Faces</h1>
+    </div>
+
+    <div class="page1">
+        <div class="column">
+            <div class="couple">
+                <div class="column">
+                    <canvas id="cvs1" class="face" width="112" height="112"></canvas>
+                    <label for="face0">Input a photo containing my face:</label>
+                    <input id="face0" name="face0" required type="file" accept="image/*">
+                    <button type="button" onclick="detect(0);">Submit</button>
+                </div>
+                <div class="column">
+                    <canvas id="cvs2" class="face" width="112" height="112"></canvas>
+                    <label for="face1">Input a photo containing my spouse&#39;s face:</label>
+                    <input id="face1" name="face1" required type="file" accept="image/*">
+                    <button type="button" onclick="detect(1);">Submit</button>
+                </div>
+            </div>
+            <button type="button" id="btn-simi" onclick="simi();">Calculate the Similarities of Couple&#39;s Faces</button>
+        </div>
+    </div>
+
+    <div class="page2">
+        <div class="column">
+            <h2>Please select the box containing my <span class="tohide">spouse's </span>face:</h2>
+            <canvas id="cvs0" class="face"></canvas>
+            <div class="couple">
+                <button type="button" onclick="select();">Select</button>
+                <button type="button" onclick="cancel();">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="page3">
+        <canvas id="cvs3" class="face"></canvas>
+    </div>
+
+    <div class="page-result">
+        <div class="couple couple-result">
+            <div class="column column-left">
+                <p>Eye Similarity:</p>
+                <p>Nose Similarity:</p>
+                <p>Mouth Similarity:</p>
+                <p>Face Similarity:</p>
+                <p>Synthetic Similarity:</p>
+            </div>
+            <div class="column column-right">
+                <p id="eye_simi" class="result"></p>
+                <p id="nose_simi" class="result"></p>
+                <p id="mouth_simi" class="result"></p>
+                <p id="face_simi" class="result"></p>
+                <p id="syn_simi" class="result"></p>
+            </div>
+        </div>
+    </div>
+
+</section>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% endblock %}

@@ -1,0 +1,62 @@
+.cfst-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-around;
+    padding: 20px 10px;
+}
+
+.page-title {
+    display: flex;
+    justify-content: center;
+}
+.page-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.couple {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+.couple-result {
+    justify-content: center;
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 6px;
+}
+.column-left {
+    align-items: flex-end;
+}
+.column-right {
+    align-items: flex-start;
+}
+
+
+.face {
+    margin: 20px;
+}
+button {
+    margin: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+#btn-simi {
+    padding: 6px 40px;
+}
+
+.tohide, .page2, .page3, .page-result {
+    display: none;
+}
+
+/* .face {
+    display: flex;
+    width: 224px;
+    height: 224px;
+} */

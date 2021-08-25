@@ -2,9 +2,8 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired
 
 from wtforms import SubmitField, HiddenField, StringField, IntegerField
-from wtforms.validators import InputRequired
+from wtforms import validators
 
 class FaceForm(FlaskForm):
-    face0 = FileField('input my photo(face)', validators=[FileRequired()])
-    face1 = FileField("input my spouse's photo(face)", validators=[FileRequired()])
-    submit = SubmitField('Submit')
+    face0 = FileField('Input a photo containing my face:', validators=[FileRequired()])
+    face1 = FileField("Input a photo containing my spouse's face:", validators=[FileRequired()])

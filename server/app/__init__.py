@@ -27,5 +27,9 @@ def create_app(config_name):
     from .api.v0 import api as apiv0_blueprint
     app.register_blueprint(apiv0_blueprint, url_prefix='/api/v0')
 
+    @app.route('/hello-world')
+    def hello():
+        return 'Hello World!'
+
     return app
 
