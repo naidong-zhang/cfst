@@ -3,14 +3,14 @@
 {% block title %}Similarity Test of Couple's Faces{% endblock %}
 
 {% block head %}
-{{super()}}
+    {{super()}}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/cfst.css') }}">
     <script>const DEFAULT_PHOTO = "{{ url_for('static', filename='img/anonym.jpg') }}";</script>
-    <script>const DETECT_URL = "{{ url_for('.detect_faces') }}";</script>
-    <script>const ALIGN_URL = "{{ url_for('.align_face') }}";</script>
-    <script>const SIMI_URL = "{{ url_for('.cal_simi') }}";</script>
+    <script>const DETECT_URL = "{{ url_for('cfst.detect_faces') }}";</script>
+    <script>const ALIGN_URL = "{{ url_for('cfst.align_face') }}";</script>
+    <script>const SIMI_URL = "{{ url_for('cfst.cal_simi') }}";</script>
     <script src="{{ url_for('static', filename='js/cfst.js') }}"></script>
-    {% endblock %}
+{% endblock %}
 
 {% block page_content %}
 <section class="cfst-container">
@@ -74,8 +74,4 @@
     </div>
 
 </section>
-{% endblock %}
-
-{% block scripts %}
-{{ super() }}
 {% endblock %}

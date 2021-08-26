@@ -1,0 +1,165 @@
+* {
+    margin: 0px;
+    padding: 0px;
+    box-sizing:border-box;
+}
+body {
+    font-family:Verdana;
+    /* border:1px solid #9E9E9E; */
+    /* max-width:600px; */
+    margin:0px auto;
+    /* background-color:#CCE8CF; */
+}
+a {
+    text-decoration:none;
+}
+img {
+    display:block;
+}
+
+#header img {
+    max-width: 100%;
+    margin:0px;
+    padding:0px;
+}
+
+#header-nav {
+    background-color:#4d311a;
+}
+#header-nav a {
+    color:#eee;
+    font-size:20px;
+}
+#header-nav li {
+    padding:8px 100px;
+}
+
+#header-nav a:hover,
+#header-nav a:focus {
+    color:#fff;
+    font-style:italic;
+    font-weight:bold;
+}
+
+#header-nav ul,
+#footer-nav ul {
+    display:flex;
+    justify-content:center;
+}
+#header-nav li,
+#footer-nav li {
+    list-style-type:none;
+}
+
+#main {
+    margin-bottom:100px;
+}
+#main article {
+    margin:40px 40px;
+}
+#main h1,
+#main h2,
+#main p {
+    margin-bottom:20px;
+    line-height:150%;
+}
+#main p {
+    margin:0px 10px 20px 40px;
+}
+
+#main figure {
+    margin-left:8px;
+    float:right;
+}
+#main .img-box {
+    border:3px outset #ccc;
+    border-radius:32px;
+}
+#main figure figcaption {
+    font-size:10px;
+    font-style:italic;
+    padding:2px;
+    max-width:100px;
+}
+
+.clear {
+    clear:both;
+}
+
+#footer {
+    font-size:10px;
+}
+#footer-nav li {
+    padding:8px 16px;
+}
+
+#contact fieldset {
+    margin:40px;
+    padding:20px;
+    border-radius:10px;
+}
+#contact p {
+    margin:0px 0px 20px 10px;
+    font-style:italic;
+}
+#contact ul {
+    list-style:none;
+}
+
+#contact ul li {
+    padding:5px;
+}
+#contact ul li label {
+    display:inline-block;
+    width:140px;
+}
+#contact ul li input {
+    padding:3px;
+    font-size:14px;
+}
+#contact ul li textarea {
+    margin-top:6px;
+    width:800px;
+    height:200px;
+}
+
+.form-error {
+    color:red;
+    padding-left:140px;
+}
+#comment-error {
+    padding-left:0px;
+}
+
+#contact button {
+    font-size:18px;
+    padding: 6px;
+    margin:5px 60px 5px 40px;
+    min-width:150px;
+    cursor: pointer;
+}
+
+#contact input:focus,
+#contact textarea:focus {
+    color:#ff3243;
+    background-color:#d3d2d2;
+}
+
+@media(max-width: 768px) {
+    #header-nav ul {
+        display:flex;
+        flex-direction:column;
+    }
+
+    #header-nav li:not(:last-of-type) {
+        border-bottom-style:groove;
+    }
+
+    #main figure {
+        float:none;
+    }
+
+    #contact ul li textarea {
+        width:100%;
+    }
+}

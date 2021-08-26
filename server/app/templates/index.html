@@ -1,19 +1,39 @@
 {% extends "base.html" %}
-{% import "bootstrap/wtf.html" as wtf %}
 
-{% block title %}Flasky{% endblock %}
+{% block title %}Naidong Zhang's Portfolio{% endblock %}
+
+{% block head %}
+    {{super()}}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+{% endblock %}
+
 
 {% block page_content %}
-{{ wtf.quick_form(face_form) }}
-{% if got_bboxes %}
-    <p><img src="data:image/png;base64,{{ face0_b64 }}" width="112" height="112" /></p>
-    <p>{{ face0_feature }}</p>
-    <p><img src="data:image/png;base64,{{ face1_b64 }}" width="112" height="112" /></p>
-    <p>{{ face1_feature }}</p>
-    <p>eye similarity: {{ '{:.2%}'.format(eye_simi) }}</p>
-    <p>nose similarity: {{ '{:.2%}'.format(nose_simi) }}</p>
-    <p>mouth similarity: {{ '{:.2%}'.format(mouth_simi) }}</p>
-    <p>face similarity: {{ '{:.2%}'.format(face_simi) }}</p>
-    <p>synthetic similarity: {{ '{:.2%}'.format(synthetic_simi) }}</p>
-{% endif %}
+
+<header id="header">
+    <img src="https://c.pxhere.com/photos/8f/77/good_morning_start_of_day_coffee_beans_wood_panel_stress_hustle_and_bustle_start_brown-625548.jpg!d" srcset="https://c.pxhere.com/photos/8f/77/good_morning_start_of_day_coffee_beans_wood_panel_stress_hustle_and_bustle_start_brown-625548.jpg!d" alt="coffee, sun, banner, brown, drink, start, caffeine, art, calligraphy, carving, stress, benefit from, sunbeam, saying, coffee beans, hustle and bustle, good morning, header, head image, start of day, wood panel, be awake, Free Images In PxHere">
+
+    <nav id="header-nav">
+        <ul>
+            <li><a href="{{ url_for('main.home') }}">Home</a></li>
+            <li><a href="{{ url_for('main.projects') }}">Projects</a></li>
+            <li><a href="{{ url_for('main.contact') }}">Contact</a></li>
+        </ul>
+    </nav>
+</header>
+
+{% block index_content %}{% endblock %}
+
+<footer id="footer">
+    <nav id="footer-nav">
+        <ul>
+            <li><a href="{{ url_for('main.home') }}">Home</a></li>
+            <li><a href="{{ url_for('main.projects') }}">Projects</a></li>
+            <li><a href="{{ url_for('main.contact') }}">Contact</a></li>
+        </ul>
+    </nav>
+</footer>
+
 {% endblock %}

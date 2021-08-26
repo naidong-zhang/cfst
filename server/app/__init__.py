@@ -24,6 +24,9 @@ def create_app(config_name):
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
+    from .cfst import cfst as cfst_blueprint
+    app.register_blueprint(cfst_blueprint, url_prefix='/cfst')
+
     from .api.v0 import api as apiv0_blueprint
     app.register_blueprint(apiv0_blueprint, url_prefix='/api/v0')
 

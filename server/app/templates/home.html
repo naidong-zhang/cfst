@@ -1,0 +1,50 @@
+{% extends "index.html" %}
+
+{% block index_content %}
+
+<main id="main">
+    <article>
+        <h2>Introduce Myself</h2>
+        <figure>
+            <img src="{{ url_for('static', filename='img/me.jpg') }}" alt="My photo">
+        </figure>
+        <p>My name is Naidong Zhang. I am a new student in the Business Information Technology Program at Red River College. I enrolled in the program in the Fall of 2020 and will graduate at the end of 2022.</p>
+    </article>
+    <div class="clear"></div>
+
+    <h1>My Skills</h1>
+
+    <article>
+        <h2>Desktop Software Development</h2>
+        <figure>
+            <img width="100" src="https://tse3-mm.cn.bing.net/th/id/OIP.ZIgH7MQXLijiPf85WPLxewAAAA?pid=ImgDet&rs=1" alt="PySide">
+            <figcaption>An open-source Qt library for Python</figcaption>
+        </figure>
+        <p>I am skilled in the field of Desktop Software Development using Python and C. I have work experience on various GUI frameworks like Qt4, Kivy, Tcl/Tk.</p>
+        <div class="clear"></div>
+    </article>
+
+    <article>
+        <h2>Web Development</h2>
+        <figure>
+            <img width="100" src="https://th.bing.com/th/id/Raf379f239fe49b1e0491b1c73ce820a7?rik=E7MaZ6QlSk2haw&riu=http%3a%2f%2fvdoit.in%2fwp-content%2fuploads%2f2016%2f09%2fvDoIT_html-css-logo1.jpg&ehk=6V8xM4T2kx5921H4C%2bTeAuTUJEwoqDnRb5BBGIoJxJM%3d&risl=&pid=ImgRaw" alt="HTML&CSS&JavaScript">
+            <figcaption>Front-end Technics</figcaption>
+        </figure>
+        <p>I learnt knowledge of Web Development at Red River College, including HTML5, CSS, and JavaScript. Besides, I also self-learnt Flask, a web framework written in Python.</p>
+        <div class="clear"></div>
+    </article>
+
+    <article>
+        <h2>Deep Learning</h2>
+        <figure>
+            <img width="100" src="https://tse3-mm.cn.bing.net/th/id/OIP.uSv3C74BgK76tiPN_Yp8yAAAAA?pid=ImgDet&rs=1" alt="PyTorch">
+            <figcaption>An open-source deep learning library for Python</figcaption>
+        </figure>
+        <p>I once worked in a company focused on Computer Vision for more than one year. Unfortunately, the company ran into problems with cash flow, so I left. During the work, I learnt the fundamental concepts of deep learning model related, particularly in the face recognization area.</p>
+        <p>I know the procedure of training a deep learning model and how to evaluate it. I can integrate deep learning models, whatever self-trained or open-source, into Python programs and deploy them.</p>
+        <div class="clear"></div>
+    </article>
+
+</main>
+
+{% endblock %}
