@@ -4,10 +4,16 @@
 
 <main id="main">
     <article>
-        <p><a href="https://www.linkedin.com/in/farid-zhang/" target="_blank">
-            <img class="img-box" src="https://www.pngall.com/wp-content/uploads/2016/07/Linkedin-Free-PNG-Image.png" alt="LinkedIn" height="128">
-        </a></p>
+        <div class="row">
+            <div class="col-xs-6 col-md-4"><a href="https://www.linkedin.com/in/farid-zhang/" target="_blank">
+                <img class="img-box" src="https://www.pngall.com/wp-content/uploads/2016/07/Linkedin-Free-PNG-Image.png" alt="LinkedIn" height="128">
+            </a></div>
+            <div class="col-xs-12 col-md-8"><a href="https://learn.rrc.ca/d2l/eP/presentations/presentation_preview_popup.d2l?ou=6605&presId=27341&contextId=27341&pageId=0&fromRedirect=1" target="_blank">
+                <img class="img-box" src="{{ url_for('static', filename='img/eportfolio.png') }}" alt="ePortfolio" height="128">
+            </a></div>
+        </div>
     </article>
+
 </main>
 
 {% endblock %}
