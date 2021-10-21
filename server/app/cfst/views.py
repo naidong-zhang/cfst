@@ -46,8 +46,8 @@ def detect_faces():
 
     h,w,_ = portrait_im.shape
     # test-code
-    bboxes = np.array([[124,71,204,171],[254,29,314,97]])
-    # bboxes = current_app.models.detect_faces(portrait_im, w=w, h=h)
+    # bboxes = np.array([[124,71,204,171],[254,29,314,97]])
+    bboxes = current_app.models.detect_faces(portrait_im, w=w, h=h)
     bboxes = bboxes.tolist()
 
     return jsonify({'bboxes': bboxes})
@@ -63,9 +63,9 @@ def align_face():
     patch_raw = base64.b64decode(b64_patch_raw)
 
     patch_im = _cv2_read_raw(patch_raw)
-    # test -code
-    aligned_face = patch_im[:112,:112]
-    # aligned_face = current_app.models.align_face(patch_im, bbox)
+    # test-code
+    # aligned_face = patch_im[:112,:112]
+    aligned_face = current_app.models.align_face(patch_im, bbox)
     if aligned_face is None:
         return jsonify({'aligned': False})
 
@@ -94,12 +94,12 @@ def cal_simi():
     face_spouse_im = _preprocess(face_spouse_im)
 
     # test-code
-    face_simi = 0.18281828
-    # face_simi = current_app.models.cal_face_simi(face_me_im, face_spouse_im)
+    # face_simi = 0.18281828
+    face_simi = current_app.models.cal_face_simi(face_me_im, face_spouse_im)
     if aligned:
         # test-code
-        mouth_simi, nose_simi, eye_simi = 0.4, 0.6, 0.7
-        # mouth_simi, nose_simi, eye_simi = current_app.models.cal_lbp_simi(face_me_im, face_spouse_im)
+        # mouth_simi, nose_simi, eye_simi = 0.4, 0.6, 0.7
+        mouth_simi, nose_simi, eye_simi = current_app.models.cal_lbp_simi(face_me_im, face_spouse_im)
         synthetic_simi = (eye_simi + nose_simi + mouth_simi) * 0.2 + face_simi * 0.4
         return jsonify({'face_simi': face_simi, 'mouth_simi': mouth_simi, 'nose_simi': nose_simi, 'eye_simi': eye_simi, 'syn_simi': synthetic_simi})
     return jsonify({'face_simi': face_simi})

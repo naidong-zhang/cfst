@@ -1,5 +1,5 @@
 import os
-# from models import create_singleton_models
+from models import create_singleton_models
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -30,10 +30,10 @@ class Config(object):
     def init_app(cls, app):
         assert not hasattr(app, 'models')
         app.models = 'debug'
-        # app.models = create_singleton_models(tf_configfile=cls.TF_CONFIGFILE,
-        #                                     tf_modelfile=cls.TF_MODELFILE,
-        #                                     mtcnn_path=cls.MTCNN_PATH,
-        #                                     model_path=cls.MODEL_PATH)
+        app.models = create_singleton_models(tf_configfile=cls.TF_CONFIGFILE,
+                                            tf_modelfile=cls.TF_MODELFILE,
+                                            mtcnn_path=cls.MTCNN_PATH,
+                                            model_path=cls.MODEL_PATH)
 
 
 class DevelopmentConfig(Config):
