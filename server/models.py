@@ -5,7 +5,7 @@ from sklearn.preprocessing import normalize
 from skimage import transform
 from skimage.feature import local_binary_pattern
 import cv2
-from openvino.inference_engine import IECore, IENetwork
+from openvino.inference_engine import IECore
 
 
 IMAGE_SIZE = (112,112)
@@ -356,11 +356,11 @@ class MtcnnDetector(object):
         # workner_net = mx.model.FeedForward.load(models[0], 1, ctx=ctx)
         # self.PNets.append(workner_net)
 
-        self.RNet = IENetwork(model='{}.xml'.format(models[1]), weights='{}.bin'.format(models[1]))
+        self.RNet = ie.read_network(model='{}.xml'.format(models[1]), weights='{}.bin'.format(models[1]))
         self.eRNet = ie.load_network(network=self.RNet, device_name='CPU')
-        self.ONet = IENetwork(model='{}.xml'.format(models[2]), weights='{}.bin'.format(models[2]))
+        self.ONet = ie.read_network(model='{}.xml'.format(models[2]), weights='{}.bin'.format(models[2]))
         self.eONet = ie.load_network(network=self.ONet, device_name='CPU')
-        self.LNet = IENetwork(model='{}.xml'.format(models[3]), weights='{}.bin'.format(models[3]))
+        self.LNet = ie.read_network(model='{}.xml'.format(models[3]), weights='{}.bin'.format(models[3]))
         self.eLNet = ie.load_network(network=self.LNet, device_name='CPU')
 
     def detect_face(self, img, accurate_landmark=False,
@@ -580,14 +580,14 @@ class Aligner(object):
 class Recognizer(object):
     def __init__(self, model_path):
         print('loading recog model', model_path)
-        self.net = IENetwork(model='{}.xml'.format(model_path), weights='{}.bin'.format(model_path))
+        self.net = ie.read_network(model='{}.xml'.format(model_path), weights='{}.bin'.format(model_path))
         self.enet = ie.load_network(network=self.net, device_name='CPU')
 
     def get_feature(self, aligned):
         input_blob = np.transpose(aligned, (2,0,1))
         input_blob = np.expand_dims(input_blob, axis=0)
         output = self.enet.infer({'data':input_blob})
-        embedding = output['pre_fc1']
+        embedding = output['pre_fc1/Fused_Add_']
         embedding = normalize(embedding).flatten()
         return embedding
 

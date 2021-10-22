@@ -86,6 +86,8 @@ function detect(i) {
 function select_face(i, bboxes) {
     const div_couple = document.getElementsByClassName('page1')[0];
     div_couple.style.display = 'none';
+    const div_result = document.getElementsByClassName('page-result')[0];
+    div_result.style.display = 'none';
     const div_select = document.getElementsByClassName('page2')[0];
     div_select.style.display = 'block';
     const tohide = document.getElementsByClassName('tohide')[0];
@@ -153,6 +155,8 @@ function callback_select(ev) {
 function _end_select() {
     const div_couple = document.getElementsByClassName('page1')[0];
     div_couple.style.display = 'block';
+    const div_result = document.getElementsByClassName('page-result')[0];
+    div_result.style.display = 'block';
     const div_select = document.getElementsByClassName('page2')[0];
     div_select.style.display = 'none';
 }
@@ -302,11 +306,11 @@ function cal_result() {
             maximumFractionDigits: 2,
           })
 
-        document.getElementById('eye_simi').innerHTML = formatter.format(data['eye_simi']);
-        document.getElementById('nose_simi').innerHTML = formatter.format(data['nose_simi']);
-        document.getElementById('mouth_simi').innerHTML = formatter.format(data['mouth_simi']);
+        // document.getElementById('eye_simi').innerHTML = formatter.format(data['eye_simi']);
+        // document.getElementById('nose_simi').innerHTML = formatter.format(data['nose_simi']);
+        // document.getElementById('mouth_simi').innerHTML = formatter.format(data['mouth_simi']);
         document.getElementById('face_simi').innerHTML = formatter.format(data['face_simi']);
-        document.getElementById('syn_simi').innerHTML = formatter.format(data['syn_simi']);
+        // document.getElementById('syn_simi').innerHTML = formatter.format(data['syn_simi']);
 
         const div_result = document.getElementsByClassName('page-result')[0];
         div_result.style.display = 'block';
